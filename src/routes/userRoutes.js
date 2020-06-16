@@ -8,12 +8,30 @@ module.exports = (app) => {
 
         newUser.save()
             .then(() => {
-                res.send(newUser);
+                res.status(201).send(newUser);
             })
-            .catch((error) => console.log('Error: ', error));
+            .catch((error) => {
+                res.status(400).send(error);
+            });
     });
 
-    app.get('/users', (req, res) => {
-        console.log('getting user');
+    app.get('/users', async (req, res) => {
+        try {
+            const users = await User.find();
+            res.send(users);
+        }
+        catch(error) {
+            res.status(400).send(error);
+        }
+    });
+
+    app.get('/users/:id', async (req, res) => {
+        try {
+            const retrievedUser = await User.findById(req.params.id);
+            res.send(retrievedUser);
+        }
+        catch(error){
+            res.status(400).send(error);
+        }
     });
 };

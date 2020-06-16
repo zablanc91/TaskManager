@@ -8,12 +8,30 @@ module.exports = (app) => {
 
         newTask.save()
             .then(() => {
-                res.send(newTask);
+                res.status(201).send(newTask);
             })
-            .catch((error) => console.log('Error: ', error));
+            .catch((error) => {
+                res.status(400).send(error);
+            });
     });
 
-    app.get('/tasks', (req, res) => {
-        console.log('Inside get task');
+    app.get('/tasks', async (req, res) => {
+        try{
+            const tasks =  await Task.find();
+            res.send(tasks);
+        }
+        catch(error){
+            res.status(400).send(error);
+        }
+    });
+
+    app.get('/tasks/:id', async (req, res) => {
+        try {
+            const retrievedTask = await Task.findById(req.params.id);
+            res.send(retrievedTask);
+        }
+        catch(error) {
+            res.status(400).send(error);
+        }   
     });
 };
