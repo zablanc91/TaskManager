@@ -45,7 +45,6 @@ module.exports = (app) => {
          for (update of updates) {
              if(!allowedUpdates.includes(update)){
                  return res.status(400).send({error: `${update} is an invalid field`});
-                 break;
              }
          }
 
@@ -64,5 +63,18 @@ module.exports = (app) => {
          catch(error) {
              res.status(500).send(error);
          }
+    });
+
+    app.delete('/users/:id', validateId, async (req, res) => {
+        try {
+            const deletedUser = await User.findByIdAndDelete(req.params.id);
+            if(!deletedUser){
+                res.status(404).send();
+            }
+            res.send(deletedUser);
+        }
+        catch(error) {
+            res.status(500).send(error);
+        }
     });
 };
