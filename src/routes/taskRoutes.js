@@ -51,16 +51,14 @@ module.exports = (app) => {
         }
 
         try {
-            //options object: new to true so it returns the updated document
-            const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, {
-                new: true,
-                runValidators: true
-            });
-
+            const updatedTask = await Task.findById(req.params.id);
+        
             if(!updatedTask) {
                 return res.status(404).send();
             }
-            
+
+            updates.forEach(update => updatedTask[update] = req.body[update]);
+            await updatedTask.save();
             res.send(updatedTask);
         }
         catch(error) {

@@ -1,16 +1,27 @@
 const User = require('../models/User');
 const validateId = require('../middleware/validateId');
+const bcrypt = require('bcryptjs');
 
 module.exports = (app) => {
     //create new User
     app.post('/users', async (req, res) => {
         try {
-            const {name, age, email, password} = req.body;
-            const newUser = await new User({ name, age, email, password}).save();
+            const newUser = await new User(req.body).save();
             res.status(201).send(newUser);
         }
         catch(error) {
             res.status(400).send(error);
+        }
+    });
+
+    //logging in, use custom method to verify email and password
+    app.post('/users/login', async (req, res) => {
+        try {
+            const user = await User.findByCredentials(req.body.email, req.body.password);
+            res.send(user);
+        }
+        catch(error) {
+            res.status(400).send();
         }
     });
 
@@ -49,20 +60,34 @@ module.exports = (app) => {
          }
 
          try {
-            const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
-                new: true,
-                runValidators: true
-            });
+             const updatedUser = await User.findById(req.params.id);
 
             if(!updatedUser){
                 return res.status(404).send();
             }
+
+            updates.forEach((update) => {
+                updatedUser[update] = req.body[update];
+            });
+
+            await updatedUser.save();
 
             res.send(updatedUser);
          }
          catch(error) {
              res.status(500).send(error);
          }
+    });
+
+    app.delete('/users/all', async (req, res) => {
+        try {
+            const result = await User.deleteMany({});
+            console.log(result);
+            res.send(result);
+        }
+        catch(error) {
+            res.status(400).send();
+        }
     });
 
     app.delete('/users/:id', validateId, async (req, res) => {
@@ -77,4 +102,5 @@ module.exports = (app) => {
             res.status(500).send(error);
         }
     });
+
 };
