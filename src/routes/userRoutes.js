@@ -1,13 +1,15 @@
 const User = require('../models/User');
 const validateId = require('../middleware/validateId');
 const bcrypt = require('bcryptjs');
+const validateAuth = require('../middleware/validateAuth');
 
 module.exports = (app) => {
     //create new User
     app.post('/users', async (req, res) => {
         try {
             const newUser = await new User(req.body).save();
-            res.status(201).send(newUser);
+            const token = await newUser.generateToken();
+            res.status(201).send({newUser, token});
         }
         catch(error) {
             res.status(400).send(error);
@@ -15,17 +17,20 @@ module.exports = (app) => {
     });
 
     //logging in, use custom method to verify email and password
+    //after logging out, User loses token; need to give back
     app.post('/users/login', async (req, res) => {
         try {
+            //generate JSON web token
             const user = await User.findByCredentials(req.body.email, req.body.password);
-            res.send(user);
+            const token =  await user.generateToken();
+            res.send({user, token});
         }
         catch(error) {
             res.status(400).send();
         }
     });
 
-    app.get('/users', async (req, res) => {
+    app.get('/users', validateAuth, async (req, res) => {
         try {
             const users = await User.find();
             res.send(users);
@@ -33,6 +38,10 @@ module.exports = (app) => {
         catch(error) {
             res.status(500).send(error);
         }
+    });
+
+    app.get('/users/profile', validateAuth, async(req, res) => {
+        res.send(req.user);
     });
 
     app.get('/users/:id', validateId, async (req, res) => {

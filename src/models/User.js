@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { tokenSecret } = require('../config/keys');
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -38,8 +40,23 @@ const userSchema = new mongoose.Schema({
                 throw new Error("Your password cannot contain 'password'.");
             }
         }
-    }
+    },
+    tokens: [{
+        token : {
+            type: String,
+            required: true
+        }
+    }]
 });
+
+//instance method to generate token with id, may need to be async?
+userSchema.methods.generateToken =  async function() {
+    const user = this;
+    const token = jwt.sign({_id: user._id.toString() }, tokenSecret);
+    user.tokens = user.tokens.concat({token});
+    await user.save();
+    return token;
+}
 
 //custom method for logging in a User
 userSchema.statics.findByCredentials = async (email, password) => {
