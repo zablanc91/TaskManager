@@ -30,6 +30,30 @@ module.exports = (app) => {
         }
     });
 
+    //remove user's token on logout
+    app.post('/users/logout', validateAuth, async(req, res) => {
+        try {
+            const newTokens = req.user.tokens.filter(token => token.token != req.token);
+            req.user.tokens = newTokens;
+            await req.user.save();
+            res.send(req.user);
+        }
+        catch(error){
+            res.status(500).send(error);
+        }     
+    });
+
+    app.post('/users/logoutAll', validateAuth, async(req, res) => {
+        try {
+            req.user.tokens = [];
+            await req.user.save();
+            res.send(req.user);
+        }
+        catch(error) {
+            res.status(500).send(error);
+        }
+    });
+
     app.get('/users', validateAuth, async (req, res) => {
         try {
             const users = await User.find();

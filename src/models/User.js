@@ -49,10 +49,10 @@ const userSchema = new mongoose.Schema({
     }]
 });
 
-//instance method to generate token with id, may need to be async?
+//generate token on create or login, then save
 userSchema.methods.generateToken =  async function() {
     const user = this;
-    const token = jwt.sign({_id: user._id.toString() }, tokenSecret);
+    const token = jwt.sign({_id: user._id.toString()}, tokenSecret);
     user.tokens = user.tokens.concat({token});
     await user.save();
     return token;
