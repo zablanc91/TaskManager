@@ -56,7 +56,18 @@ userSchema.methods.generateToken =  async function() {
     user.tokens = user.tokens.concat({token});
     await user.save();
     return token;
-}
+};
+
+//when sending user through res, JSON.stringify(user) is called behind scenes and toJSON will also be called
+//turn document to object and get rid of password and tokens to protect user info
+userSchema.methods.toJSON = function() {
+    const user = this;
+    const userObject = user.toObject();
+    delete userObject.password;
+    delete userObject.tokens;
+    return userObject;
+};
+
 
 //custom method for logging in a User
 userSchema.statics.findByCredentials = async (email, password) => {

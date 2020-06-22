@@ -43,6 +43,7 @@ module.exports = (app) => {
         }     
     });
 
+    //clears out all of user's tokens after logout
     app.post('/users/logoutAll', validateAuth, async(req, res) => {
         try {
             req.user.tokens = [];
@@ -68,20 +69,7 @@ module.exports = (app) => {
         res.send(req.user);
     });
 
-    app.get('/users/:id', validateId, async (req, res) => {
-        try {
-            const retrievedUser = await User.findById(req.params.id);
-            if(!retrievedUser) {
-                return res.status(404).send();
-            }
-            res.send(retrievedUser);
-        }
-        catch(error){
-            res.status(500).send(error);
-        }
-    });
-
-    app.patch('/users/:id', validateId, async (req, res) => {
+    app.patch('/users/profile', validateAuth, async (req, res) => {
          //throw error if update attempted on nonvalid field for model
          const allowedUpdates = ['name', 'email', 'password', 'age'];
          const updates = Object.keys(req.body);
@@ -93,19 +81,12 @@ module.exports = (app) => {
          }
 
          try {
-             const updatedUser = await User.findById(req.params.id);
-
-            if(!updatedUser){
-                return res.status(404).send();
-            }
-
             updates.forEach((update) => {
-                updatedUser[update] = req.body[update];
+                req.user[update] = req.body[update];
             });
 
-            await updatedUser.save();
-
-            res.send(updatedUser);
+            await req.user.save();
+            res.send(req.user);
          }
          catch(error) {
              res.status(500).send(error);
@@ -123,13 +104,10 @@ module.exports = (app) => {
         }
     });
 
-    app.delete('/users/:id', validateId, async (req, res) => {
+    app.delete('/users/profile', validateAuth, async (req, res) => {
         try {
-            const deletedUser = await User.findByIdAndDelete(req.params.id);
-            if(!deletedUser){
-                res.status(404).send();
-            }
-            res.send(deletedUser);
+            await req.user.remove();
+            res.send(req.user);
         }
         catch(error) {
             res.status(500).send(error);
