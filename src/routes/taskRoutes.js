@@ -1,12 +1,12 @@
 const Task = require('../models/Task');
-const validateId = require("../middleware/validateId");
+const validateId = require('../middleware/validateId');
+const validateAuth = require('../middleware/validateAuth');
 
 module.exports = (app) => {
     //create new Task
-    app.post('/tasks', async (req, res) => {
+    app.post('/tasks', validateAuth, async (req, res) => {
         try {
-            const {description, completed} = req.body;
-            const newTask = await new Task({ description, completed}).save();
+            const newTask = await new Task({ ...req.body, owner: req.user._id }).save();
             res.status(201).send(newTask);
         }
         catch(error) {
@@ -14,10 +14,10 @@ module.exports = (app) => {
         }
     });
 
-    //TODO later: only get tasks that belong to the user
-    app.get('/tasks', async (req, res) => {
+    //only get tasks that belong to the user
+    app.get('/tasks', validateAuth , async (req, res) => {
         try{
-            const tasks =  await Task.find();
+            const tasks =  await Task.find({owner: req.user._id});
             res.send(tasks);
         }
         catch(error){
@@ -25,10 +25,9 @@ module.exports = (app) => {
         }
     });
 
-    //TODO later: check to make sure the task belongs to the user
-    app.get('/tasks/:id', validateId , async (req, res) => {
+    app.get('/tasks/:id', validateId, validateAuth, async (req, res) => {
         try {
-            const retrievedTask = await Task.findById(req.params.id);
+            const retrievedTask = await Task.findOne({_id: req.params.id, owner: req.user._id});
             if(!retrievedTask) {
                 return res.status(404).send();
             }
@@ -51,14 +50,17 @@ module.exports = (app) => {
         }
 
         try {
-            const updatedTask = await Task.findById(req.params.id);
+            const updatedTask = await Task.findOne({_id: req.params.id});
+            console.log('updated task:', updatedTask);
         
             if(!updatedTask) {
                 return res.status(404).send();
             }
 
             updates.forEach(update => updatedTask[update] = req.body[update]);
+            console.log('updated task after save:', updatedTask);
             await updatedTask.save();
+            console.log('updated task after save:', updatedTask);
             res.send(updatedTask);
         }
         catch(error) {
@@ -66,9 +68,20 @@ module.exports = (app) => {
         }
     });
 
-    app.delete('/tasks/:id', validateId, async (req, res) => {
+    app.delete('/tasks/all', validateAuth, async (req, res) => {
         try {
-            const deletedTask = await Task.findByIdAndDelete(req.params.id);
+            const result = await Task.deleteMany({owner: req.user._id});
+            console.log(result);
+            res.send(result);
+        }
+        catch(error) {
+            res.status(500).send(error);
+        }
+    });
+
+    app.delete('/tasks/:id', validateId, validateAuth, async (req, res) => {
+        try {
+            const deletedTask = await Task.deleteOne({_id: req.params.id, owner: req.user._id});
             if(!deletedTask){
                 return res.status(404).send();
             }
@@ -78,4 +91,5 @@ module.exports = (app) => {
             res.status(500).send(error);
         }
     });
+
 };

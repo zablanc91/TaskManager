@@ -1,5 +1,4 @@
 const User = require('../models/User');
-const validateId = require('../middleware/validateId');
 const bcrypt = require('bcryptjs');
 const validateAuth = require('../middleware/validateAuth');
 
