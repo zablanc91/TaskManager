@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Task = require('../models/Task');
 const bcrypt = require('bcryptjs');
 const validateAuth = require('../middleware/validateAuth');
 
@@ -95,6 +96,7 @@ module.exports = (app) => {
     app.delete('/users/all', async (req, res) => {
         try {
             const result = await User.deleteMany({});
+            await Task.deleteMany({});
             console.log(result);
             res.send(result);
         }

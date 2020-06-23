@@ -50,17 +50,14 @@ module.exports = (app) => {
         }
 
         try {
-            const updatedTask = await Task.findOne({_id: req.params.id});
-            console.log('updated task:', updatedTask);
+            const updatedTask = await Task.findOne({_id: req.params.id, owner: req.user_id});
         
             if(!updatedTask) {
                 return res.status(404).send();
             }
 
             updates.forEach(update => updatedTask[update] = req.body[update]);
-            console.log('updated task after save:', updatedTask);
             await updatedTask.save();
-            console.log('updated task after save:', updatedTask);
             res.send(updatedTask);
         }
         catch(error) {
@@ -71,7 +68,6 @@ module.exports = (app) => {
     app.delete('/tasks/all', validateAuth, async (req, res) => {
         try {
             const result = await Task.deleteMany({owner: req.user._id});
-            console.log(result);
             res.send(result);
         }
         catch(error) {
