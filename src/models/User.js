@@ -48,7 +48,7 @@ const userSchema = new mongoose.Schema({
             required: true
         }
     }]
-});
+}, { timestamps: true});
 
 //generate token on create or login, then save
 userSchema.methods.generateToken =  async function() {
