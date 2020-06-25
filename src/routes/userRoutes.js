@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Task = require('../models/Task');
 const validateAuth = require('../middleware/validateAuth');
 const multer = require('multer');
+const sharp = require('sharp');
 
 module.exports = (app) => {
     //create new User
@@ -115,9 +116,9 @@ module.exports = (app) => {
         }
     });
 
-    //restrict max file size to 1MB
+    //multer file upload - restrict max file size to 1MB
     //file data is added to req.file after this middleware
-    const upload = multer({
+    const uploadAvatar = multer({
         limits: {
             fileSize: 1000000
         },
@@ -131,10 +132,17 @@ module.exports = (app) => {
         }
     });
 
+    //middleware using sharp to format image after upload, resize and make png
+    const formatImage = async (req, res, next) => {
+        const buffer = await sharp(req.file.buffer).resize({width: 300, height:300}).png().toBuffer();
+        req.buffer = buffer;
+        next();
+    };
+
     //upload user profile, key in POST req is provided to upload and value is the file
-    app.post('/users/profile/avatar', validateAuth, upload.single('avatar'), async (req, res) => {
+    app.post('/users/profile/avatar', validateAuth, uploadAvatar.single('avatar'), formatImage, async (req, res) => {
         try {
-            req.user.avatar = req.file.buffer;
+            req.user.avatar = req.buffer;
             await req.user.save();
             res.send();
         }
@@ -142,7 +150,7 @@ module.exports = (app) => {
             res.status(500).send(error);
         }    
     }, (error, req, res, next) => {
-        //catch errors from multer middleware
+        //error handler for errors from multer/sharp
         res.status(400).send({error: error.message});
     });
 
@@ -157,4 +165,19 @@ module.exports = (app) => {
         }
     });
 
+    //retrieve User avatar image through GET req to url
+    app.get('/users/:id/avatar', async (req, res) => {
+        try{
+            const user = await User.findById(req.params.id);
+            if(!user || !user.avatar){
+                throw new Error;
+            }
+
+            //set response header - avatars are pngs
+            res.set('Content-Type', 'image/png').send(user.avatar);
+        }
+        catch(error){
+            res.status(404).send();
+        }
+    });
 };
