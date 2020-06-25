@@ -47,7 +47,10 @@ const userSchema = new mongoose.Schema({
             type: String,
             required: true
         }
-    }]
+    }],
+    avatar: {
+        type: Buffer
+    }
 }, { timestamps: true});
 
 //generate token on create or login, then save

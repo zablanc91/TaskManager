@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const Task = require('../models/Task');
-const bcrypt = require('bcryptjs');
 const validateAuth = require('../middleware/validateAuth');
+const multer = require('multer');
 
 module.exports = (app) => {
     //create new User
@@ -109,6 +109,48 @@ module.exports = (app) => {
         try {
             await req.user.remove();
             res.send(req.user);
+        }
+        catch(error) {
+            res.status(500).send(error);
+        }
+    });
+
+    //restrict max file size to 1MB
+    //file data is added to req.file after this middleware
+    const upload = multer({
+        limits: {
+            fileSize: 1000000
+        },
+        fileFilter(req, file, next) {
+            const isPhoto = file.mimetype.startsWith('image/');
+            if(isPhoto) {
+                return next(null, true);
+            }
+            
+            next({message: 'Invalid file type, use an image.'});
+        }
+    });
+
+    //upload user profile, key in POST req is provided to upload and value is the file
+    app.post('/users/profile/avatar', validateAuth, upload.single('avatar'), async (req, res) => {
+        try {
+            req.user.avatar = req.file.buffer;
+            await req.user.save();
+            res.send();
+        }
+        catch(error) {
+            res.status(500).send(error);
+        }    
+    }, (error, req, res, next) => {
+        //catch errors from multer middleware
+        res.status(400).send({error: error.message});
+    });
+
+    app.delete('/users/profile/avatar', validateAuth, async (req, res) => {
+        try {
+            req.user.avatar = undefined;
+            await req.user.save();
+            res.send();
         }
         catch(error) {
             res.status(500).send(error);
