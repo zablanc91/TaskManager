@@ -3,6 +3,7 @@ const Task = require('../models/Task');
 const validateAuth = require('../middleware/validateAuth');
 const multer = require('multer');
 const sharp = require('sharp');
+const { sendNewEmail, sendDeleteEmail } = require('../emails/account');
 
 module.exports = (app) => {
     //create new User
@@ -10,6 +11,7 @@ module.exports = (app) => {
         try {
             const newUser = await new User(req.body).save();
             const token = await newUser.generateToken();
+            sendNewEmail(newUser.name, newUser.email);
             res.status(201).send({newUser, token});
         }
         catch(error) {
@@ -94,20 +96,9 @@ module.exports = (app) => {
          }
     });
 
-    app.delete('/users/all', async (req, res) => {
-        try {
-            const result = await User.deleteMany({});
-            await Task.deleteMany({});
-            console.log(result);
-            res.send(result);
-        }
-        catch(error) {
-            res.status(400).send();
-        }
-    });
-
     app.delete('/users/profile', validateAuth, async (req, res) => {
         try {
+            sendDeleteEmail(req.user.name, req.user.email);
             await req.user.remove();
             res.send(req.user);
         }
